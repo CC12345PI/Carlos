@@ -1,0 +1,175 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat May 26 11:03:58 2018
+small car control main progress. 
+the car is controlled by Rraspberrypi 3+ B module. 
+Use bluetooth keyboard to controlled the car moving. 
+Have 4 LED, 2 for front,2 for rear indicator light. 
+The diagram plese check the attachment PDF file . 
+Follow scripts not include all, I will update it later. 
+@author: chen_xin12345@outlook.com
+"""
+
+
+
+def system_ini():
+	GPIO.setmode(GPIO.BCM)  
+	GPIO.setup(Red,GPIO.OUT) #RED LED
+	GPIO.setup(Blue,GPIO.OUT)  #BLUE LED
+	GPIO.setup(Green,GPIO.OUT)  #GREEN LED  
+	GPIO.setup(Enable1_Pin,GPIO.OUT,initial=GPIO.LOW)  # 
+	GPIO.setup(input3_pin,GPIO.OUT,initial=GPIO.LOW)  # 
+	GPIO.setup(input4_pin,GPIO.OUT,initial=GPIO.LOW)  # 
+	GPIO.setup(Enable2_Pin,GPIO.OUT,initial=GPIO.LOW)  # 
+	GPIO.setup(input1_pin,GPIO.OUT,initial=GPIO.LOW)  # 
+	GPIO.setup(input2_pin,GPIO.OUT,initial=GPIO.LOW)  #  
+	print ("初始化完成")
+def cleanup():
+	 
+	GPIO.output(input3_pin, GPIO.HIGH)
+	GPIO.output(input4_pin, GPIO.HIGH)
+	GPIO.output(Enable1_Pin, GPIO.HIGH) 
+	GPIO.output(input1_pin, GPIO.HIGH)
+	GPIO.output(input2_pin, GPIO.HIGH)
+	GPIO.output(Enable2_Pin, GPIO.HIGH)  
+	GPIO.cleanup()
+	print ("Clenup done")
+	
+	
+def forward():
+	system_ini()
+    #left-front正传
+	print ("前进forward")
+	#left-front
+	GPIO.output(input3_pin, GPIO.LOW)
+	GPIO.output(input4_pin, GPIO.HIGH)
+	GPIO.output(Enable1_Pin, GPIO.HIGH)
+	#right-front
+	GPIO.output(input1_pin, GPIO.LOW)
+	GPIO.output(input2_pin, GPIO.HIGH)
+	GPIO.output(Enable2_Pin, GPIO.HIGH)  	
+	GPIO.output(Red,GPIO.HIGH)
+	time.sleep(0.05)
+	
+def backward():
+	system_ini() 
+	print ("后退backward")
+	#left-front
+	GPIO.output(input3_pin, GPIO.HIGH)
+	GPIO.output(input4_pin, GPIO.LOW)
+	GPIO.output(Enable1_Pin, GPIO.HIGH) 
+	GPIO.output(Blue, GPIO.HIGH)
+	#right-front
+	GPIO.output(input1_pin, GPIO.HIGH)
+	GPIO.output(input2_pin, GPIO.LOW)
+	GPIO.output(Enable2_Pin, GPIO.HIGH)
+	time.sleep(0.05)  
+def left90D():
+	#此代码不包括后轮的转向。
+	#直流马达在DC3V的情况下是，100转/分， 所以0.15秒对应0.25转， 0.3秒对应0.5转。 
+	#我们的转向按照0.25转为单位微调。配合车前后的传感器进行检测是否撞墙。 	
+	system_ini()
+	print ("turn left 90 degree")
+	#left-front stop
+	GPIO.output(input3_pin, GPIO.HIGH)
+	GPIO.output(input4_pin, GPIO.HIGH)
+	GPIO.output(Enable1_Pin, GPIO.HIGH) 
+	GPIO.output(Blue, GPIO.HIGH)
+	#right-front forward 0.15 second
+	GPIO.output(input1_pin, GPIO.LOW)
+	GPIO.output(input2_pin, GPIO.HIGH)
+	GPIO.output(Enable2_Pin, GPIO.HIGH)  
+	time.sleep(0.05)
+def right90D():
+	#此代码不包括后轮的转向。
+	#直流马达在DC3V的情况下是，100转/分， 所以0.15秒对应0.25转， 0.3秒对应0.5转。 
+	#我们的转向按照0.25转为单位微调。配合车前后的传感器进行检测是否撞墙。 	
+  # This code does not include the steering of the rear wheels.
+#The DC motor is 100 rpm in the case of DC 3V, so 0.15 seconds correspond to 0.25 rpm and 0.3 seconds correspond to 0.5 rpm.
+#Our steering is fine-tuned in 0.25 revolutions. With the sensor before and after the car to detect whether it hit the wall.
+	system_ini()
+	print ("turn rigth 90 degree")
+	#left-front forward 0.15 second
+	GPIO.output(input3_pin, GPIO.LOW)
+	GPIO.output(input4_pin, GPIO.HIGH)
+	GPIO.output(Enable1_Pin, GPIO.HIGH) 
+	GPIO.output(Blue, GPIO.HIGH)
+	#right-front stop for 5 second
+	GPIO.output(input1_pin, GPIO.HIGH)
+	GPIO.output(input2_pin, GPIO.HIGH)
+	GPIO.output(Enable2_Pin, GPIO.HIGH)  
+	time.sleep(0.05)
+	
+	
+def stop():
+	print ("stop")
+	#left-front forward  second
+	GPIO.output(input3_pin, GPIO.LOW)
+	GPIO.output(input4_pin, GPIO.LOW)
+	GPIO.output(Enable1_Pin, GPIO.LOW) 
+	GPIO.output(Blue, GPIO.HIGH)
+	#right-front stop for 5 second
+	GPIO.output(input1_pin, GPIO.LOW)
+	GPIO.output(input2_pin, GPIO.LOW)
+	GPIO.output(Enable2_Pin, GPIO.LOW)
+	
+	
+if __name__ == '__main__':
+	try:
+    #run your code 
+		import RPi.GPIO as GPIO
+		import time  
+		from evdev import InputDevice
+		from select import select
+		dev = InputDevice('/dev/input/event0')
+		GPIO.setmode(GPIO.BCM) 
+		Red = 24
+		Blue = 25
+		Green = 26   
+		#left-front 
+		Enable1_Pin = 4
+		input3_pin = 5
+		input4_pin = 6
+		#right-front
+		Enable2_Pin = 17
+		input1_pin = 16
+		input2_pin = 13 
+		# 	
+		system_ini()
+		#   
+		#控制电压输出
+		while True:   
+			select([dev], [], [])
+			for event in  dev.read():
+				print 'code:%s value:%s' % (event.code, event.value)
+				if event.code == 103 and event.value == 2:
+					print ("forward")
+					forward() 
+				elif event.code == 103 and  event.value == 0: 
+					print("stop forward")
+					stop()
+				elif event.code == 108 and  event.value == 2: 
+					print("backward")
+					backward()	
+				elif event.code == 108 and  event.value == 0: 
+					print("backward STOP ")
+					stop()	
+				elif event.code == 105 and  event.value == 2: 
+					print("LEFT")
+					left90D()	
+				elif event.code == 105 and  event.value == 0: 
+					print("stop ")
+					stop()
+				elif event.code == 106 and  event.value == 2: 
+					print("Right")
+					right90D()	
+				elif event.code == 106 and  event.value == 0: 
+					print("stop ")
+					stop() 
+				elif event.code == 57:  
+					stop()	 
+			 
+	except(BaseException),e:
+		print(e)
+	finally:
+		GPIO.cleanup()
